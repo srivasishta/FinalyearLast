@@ -5,8 +5,9 @@ import SendIcon from '@mui/icons-material/NearMeTwoTone';
 import RefreshIcon from '@mui/icons-material/RotateLeftTwoTone';
 import Bot from "../../assets/bot.png";
 import user from '../../assets/User.png';
+import axios from "axios";
 
-const MAX_MESSAGE_LENGTH = 250;
+// const MAX_MESSAGE_LENGTH = 250;
 
 const Chatbox = ({ open, onClose }) => {
     const [messages, setMessages] = useState([]);
@@ -14,17 +15,21 @@ const Chatbox = ({ open, onClose }) => {
     const [sessionId, setSessionId] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const inputRef = useRef(null); // Create a ref for the input field
+    const messagesEndRef = useRef(null);
 
     useEffect(() => {
         const storedSessionId = localStorage.getItem("sessionId");
         if (storedSessionId) {
             setSessionId(storedSessionId);
+        }
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
         } else {
             const newSessionId = uuidv4();
             setSessionId(newSessionId);
             localStorage.setItem("sessionId", newSessionId);
         }
-    }, []);
+    }, [messages]);
 
     // Focus input after every render, not just the initial load
     useEffect(() => {
@@ -33,36 +38,29 @@ const Chatbox = ({ open, onClose }) => {
         }
     }, [messages]); // This will run after every new message
 
-    const formatResponse = (response) => {
-        return response.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
-    };
+    // const formatResponse = (response) => {
+    //     return response.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+    // };
 
     const sendMessage = async (message) => {
         try {
             setIsLoading(true);
-            const thinkingMessage = { role: "assistant", content: "Thinking..." };
-            setMessages(prev => [...prev, thinkingMessage]);
+            setMessages(prev => [...prev, { role: "assistant", content: "Thinking..." }]);
 
-            const response = await fetch('http://localhost:5000/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: message,
-                    sessionId: sessionId
-                }),
+            const response = await axios.post("http://127.0.0.1:11434/api/generate", {
+                model: "mistral", // Change this if using a different model
+                prompt: message,
+                stream: false,
             });
 
-            const data = await response.json();
-            if (data.response && data.response.trim()) {
-                const formattedResponse = formatResponse(data.response);
-                setMessages(prev => [...prev.slice(0, -1), { role: "assistant", content: formattedResponse }]);
+            if (response.data.response.trim()) {
+                setMessages(prev => [...prev.slice(0, -1), { role: "assistant", content: response.data.response }]);
             } else {
-                setMessages(prev => [...prev.slice(0, -1), { role: "assistant", content: "Sorry, I encountered an issue. Please try again." }]);
+                setMessages(prev => [...prev.slice(0, -1), { role: "assistant", content: "Sorry, I couldn't generate a response. Try again." }]);
             }
         } catch (error) {
-            setMessages(prev => [...prev.slice(0, -1), { role: "assistant", content: "Sorry, I encountered an error. Please try again." }]);
+            setMessages(prev => [...prev.slice(0, -1), { role: "assistant", content: "Error fetching response. Try again." }]);
+            console.error("Error:", error);
         } finally {
             setIsLoading(false);
         }
@@ -70,7 +68,7 @@ const Chatbox = ({ open, onClose }) => {
 
     const handleSend = async () => {
         if (input.trim()) {
-            const userMessage = { role: "user", content: input.slice(0, MAX_MESSAGE_LENGTH) };
+            const userMessage = { role: "user", content: input.slice(0) };
             setMessages(prev => [...prev, userMessage]);
             setInput("");
             await sendMessage(input);
@@ -123,50 +121,36 @@ const Chatbox = ({ open, onClose }) => {
                 >
                     <List>
                         {messages.map((msg, index) => (
-                            <ListItem
-                                key={index}
-                                sx={{
-                                    justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
-                                    display: "flex",
-                                    alignItems: "flex-start",
-                                }}
-                            >
+                            <ListItem key={index} sx={{
+                                justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+                                display: "flex",
+                                alignItems: "flex-start",
+                            }}>
                                 {msg.role === "assistant" && (
-                                    <Avatar
-                                        src={Bot}
-                                        sx={{ marginRight: '8px', width: 40, height: 40 }}
-                                    />
+                                    <Avatar src={Bot} sx={{ marginRight: '8px', width: 40, height: 40 }} />
                                 )}
-                                <Box
-                                    sx={{
-                                        bgcolor: msg.role === "user" ? '#85A947' : '#E4F1AC',
-                                        color: msg.role === "user" ? 'white' : 'black',
-                                        borderRadius: msg.role === "user"
-                                            ? "18px 18px 0px 18px"
-                                            : "0px 18px 18px 18px",
-                                        padding: "10px 16px",
-                                        maxWidth: '60%',
-                                        minWidth: "auto",
-                                        fontSize: "14px",
-                                        boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.2)",
-                                        wordWrap: "break-word",
-                                        display: "inline-block",
-                                    }}
-                                    dangerouslySetInnerHTML={{
-                                        __html: msg.role === "assistant"
-                                            ? msg.content.replace(/\n/g, "<br/>")
-                                            : msg.content.replace(/\n/g, "<br/>")
-                                    }}
-                                />
+                                <Box sx={{
+                                    bgcolor: msg.role === "user" ? '#85A947' : '#E4F1AC',
+                                    color: msg.role === "user" ? 'white' : 'black',
+                                    borderRadius: msg.role === "user"
+                                        ? "18px 18px 0px 18px"
+                                        : "0px 18px 18px 18px",
+                                    padding: "10px 16px",
+                                    maxWidth: '60%',
+                                    fontSize: "14px",
+                                    wordWrap: "break-word",
+                                    display: "inline-block",
+                                }} dangerouslySetInnerHTML={{
+                                    __html: msg.content.replace(/\n/g, "<br/>")
+                                }} />
                                 {msg.role === "user" && (
-                                    <Avatar
-                                        src={user}
-                                        sx={{ marginLeft: '8px', width: 40, height: 40 }}
-                                    />
+                                    <Avatar src={user} sx={{ marginLeft: '8px', width: 40, height: 40 }} />
                                 )}
                             </ListItem>
                         ))}
+                        <div ref={messagesEndRef} />  {/* Scroll target */}
                     </List>
+
                 </Paper>
 
                 <Box

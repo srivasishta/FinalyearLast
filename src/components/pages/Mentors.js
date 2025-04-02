@@ -5,7 +5,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "../organisms/SideBar";
 import NavDash from "../organisms/NavDash";
 import MentorPage from "../organisms/MentorsContent";
-import SidebarMentor from "../organisms/SideBarMentor";
 
 const Mentors = () => {
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -26,8 +25,6 @@ const Mentors = () => {
         setMobileOpen(!mobileOpen);
     };
 
-    const isMentor = localStorage.getItem('mid')
-
     return (
         <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
             {/* Navbar */}
@@ -47,11 +44,7 @@ const Mentors = () => {
                         display: { xs: "none", sm: "block" },
                     }}
                 >
-                    {
-                        !isMentor ?
-                        <Sidebar onMenuClick={handleMenuClick} />
-                        : <SidebarMentor onMenuClick={handleMenuClick} />
-                    }
+                    <Sidebar onMenuClick={handleMenuClick} />
                 </Box>
 
                 {/* Main Content */}

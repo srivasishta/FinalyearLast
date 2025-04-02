@@ -76,7 +76,6 @@ export default function MentorSignInPage() {
                 console.log("Mentor Token:", response.data.token); // ✅ Debug token before storing
                 localStorage.setItem("mentorToken", response.data.token); // Store token
                 localStorage.setItem("mentorID", mentorID);
-                localStorage.setItem("mid", response.data.mentor._id)
                 navigate("/dashboard-mentor"); // Redirect to dashboard
             } else {
                 console.log("Error:", response.data.message); // ✅ Log error message

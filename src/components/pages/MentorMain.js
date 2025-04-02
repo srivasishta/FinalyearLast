@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Box, Drawer, Container } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
@@ -15,15 +15,12 @@ const MentorMain = () => {
     const sidebarOptions = [
         { label: "Dashboard", id: "dashboard-mentor" },
         { label: "Settings", id: "settings-mentor" },
-        {label: "Other Mentors", id: "mentors" },
         { label: "Contact Us", id: "contact-mentor" },
     ];
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);
     };
-
-    
 
     const handleMenuClick = (path) => {
         const selectedOption = sidebarOptions.find((option) => option.id === path);

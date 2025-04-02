@@ -60,11 +60,8 @@ export default function SignInPage() {
             const response = await axios.post("http://localhost:5002/api/student/login", { usn, password });
 
             if (response.data.success) {
-                
-                console.log(response.data)
                 localStorage.setItem("studentToken", response.data.token); // Store token
                 localStorage.setItem("usn", usn);
-                localStorage.setItem("id", response.data.student._id)
                 navigate("/dashboard"); // Redirect to dashboard
             } else {
                 setErrorMessage("Invalid USN or Password. Please try again.");

@@ -107,9 +107,6 @@ export default function StudentRegister() {
                 });
 
                 if (response.ok) {
-                    const responseData = await response.json(); // Assuming the API returns the mentor's ID
-                    console.log(responseData)
-                    localStorage.setItem("id", responseData.user._id); // Store mentorID
                     toast.success("Registration successful!");
                     console.log("Form submitted", formData);
                     setFormData({ fullName: "", usn: "", email: "", password: "" });
