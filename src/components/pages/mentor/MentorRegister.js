@@ -84,15 +84,11 @@ export default function MentorRegister() {
                 },
                 body: JSON.stringify(formData),
             });
-        
+
             if (response.ok) {
-                const responseData = await response.json(); // Assuming the API returns the mentor's ID
-                localStorage.setItem("mid", responseData.user._id); 
-        
                 toast.success("Registration successful!");
                 console.log("Form submitted", formData);
                 setFormData({ fullName: "", mentorID: "", email: "", password: "" });
-        
                 setTimeout(() => {
                     navigate("/dashboard-mentor"); // Redirect to dashboard
                 }, 1000);

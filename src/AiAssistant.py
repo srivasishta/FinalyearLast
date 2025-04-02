@@ -1,17 +1,16 @@
-# GOOGLE_API_KEY = "AIzaSyAvsbC4c8VMWqnxIqWfQ8zAeUXg2jvF8hE"
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import google.generativeai as genai
+import requests
+import time
 from datetime import datetime
+import pytz
 
 app = Flask(__name__)
 CORS(app)
 
-# Configure the Gemini API
-GOOGLE_API_KEY = "AIzaSyAvsbC4c8VMWqnxIqWfQ8zAeUXg2jvF8hE"
-genai.configure(api_key=GOOGLE_API_KEY)
+OLLAMA_API_URL = "http://localhost:11434/api/generate"  # Ollama Mistral API endpoint
 
-# Define the AI assistant prompt
+# 🔹 SYSTEM PROMPT for Mistral AI
 SYSTEM_PROMPT = """You are an advanced AI assistant designed to provide intelligent, context-aware, and human-like conversations. Your primary goal is to engage users effectively, understand their intent, and provide accurate, concise, and helpful responses. Responses should be relevant to mental health and academics only.
 
 Core principles to follow in every response:
@@ -57,17 +56,23 @@ Core principles to follow in every response:
 - Optimize response time
 - Maintain integration compatibility
 
-"I’m Vishwakarm.ai, named after Vishwakarma, the architect of gods, who is known for his incredible craftsmanship and creative prowess. I’m here to assist you with your questions and provide helpful information. How can I help you today?"
+"I'm Vishwakarm.ai, named after Vishwakarma, the architect of gods, who is known for his incredible craftsmanship and creative prowess. I’m here to assist you with your questions and provide helpful information. How can I help you today?"
 
-When asked about your identity, such as "Who are you?" or "What is your name?", respond in a friendly and generic manner without revealing your name or company name. Emphasize your role as an assistant and your purpose to help. For example, you can say: "I'm here to assist you with your questions and provide helpful information. How can I help you today?"
+When asked about your identity, such as "Who are you?" or "What is your name?", respond in a friendly and generic manner without revealing your name or company name. Emphasize your role as an assistant and your purpose to help. 
 
 Remember to be concise yet thorough in less than 800 words, professional yet friendly, and always focus on providing value to the user."""
 
+# 🔹 Dictionary to store conversation history for each session
 conversation_history = {}
 
-def get_greeting():
-    """Returns a greeting based on the current time."""
-    current_hour = datetime.now().hour
+def get_greeting(user_timezone="UTC"):
+    """Returns a greeting based on the user's local time."""
+    try:
+        tz = pytz.timezone(user_timezone)
+        current_hour = datetime.now(tz).hour
+    except pytz.UnknownTimeZoneError:
+        current_hour = datetime.now().hour  # Fallback to server time
+
     if current_hour < 12:
         return "Good morning! ☀️"
     elif current_hour < 18:
@@ -75,64 +80,61 @@ def get_greeting():
     else:
         return "Good evening! 🌙"
 
-def create_chat_context(history=None):
-    """Creates a new chat session with Gemini AI."""
-    if history is None:
-        history = []
+def chat_with_ollama(user_input, session_id):
+    """Sends user input to Mistral AI along with the system prompt."""
     
-    generation_config = {
-        'temperature': 0.8,  # Balance between creativity and consistency
-        'top_k': 40,
-        'top_p': 0.95,
-        'max_output_tokens': 8192,
+    if session_id not in conversation_history:
+        # Initialize session with the system prompt
+        conversation_history[session_id] = [{"role": "system", "content": SYSTEM_PROMPT}]
+
+    # Add user message to history
+    conversation_history[session_id].append({"role": "user", "content": user_input})
+
+    # Construct full conversation history as a prompt
+    formatted_prompt = "\n".join([msg["content"] for msg in conversation_history[session_id]])
+
+    # Request payload with full conversation history
+    payload = {
+        "model": "mistral",
+        "prompt": formatted_prompt,  # **System prompt + user history**
+        "stream": False
     }
-    
-    safety_settings = [
-        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
-        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
-        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
-        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"}
-    ]
-    
-    model = genai.GenerativeModel(
-        model_name='gemini-2.0-flash-exp',
-        generation_config=generation_config,
-        safety_settings=safety_settings
-    )
-    
-    chat = model.start_chat(history=history)
-    chat.send_message(SYSTEM_PROMPT)  # System prompt initialization
-    return chat
+
+    # Send request to Mistral AI
+    try:
+        response = requests.post(OLLAMA_API_URL, json=payload)
+        response_data = response.json()
+
+        # Extract response text
+        ai_response = response_data.get("response", "I'm sorry, I couldn't process that.")
+
+        # Append AI response to chat history
+        conversation_history[session_id].append({"role": "assistant", "content": ai_response})
+
+        return ai_response
+
+    except requests.exceptions.RequestException as e:
+        return f"Error connecting to Ollama: {str(e)}"
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    """Handles user messages and returns AI responses."""
     try:
         data = request.json
         user_input = data.get('message')
         session_id = data.get('sessionId')
-        
-        # Check if this is a new session
-        new_session = session_id not in conversation_history
-        
-        if new_session:
-            conversation_history[session_id] = create_chat_context()
-        
-        chat = conversation_history[session_id]
-        
-        if new_session:
-            # First message in session → send greeting first
-            greeting = get_greeting()
-            ai_response = chat.send_message(user_input)
-            full_response = f"{greeting} {ai_response.text}"
-        else:
-            # Normal AI response
-            ai_response = chat.send_message(user_input)
-            full_response = ai_response.text
+        user_timezone = data.get('timezone', 'UTC')  # Default to UTC
+
+        if not user_input or not session_id:
+            return jsonify({"response": "Invalid request.", "status": "error"}), 400
+
+        # Get AI response
+        ai_response = chat_with_ollama(user_input, session_id)
 
         return jsonify({
-            "response": full_response,
+            "response": ai_response,
             "status": "success"
-        })
+        }), 200  # Ensure a valid JSON response
         
     except Exception as e:
         return jsonify({
@@ -151,6 +153,15 @@ def clear_chat():
         return jsonify({"status": "success", "message": "Chat history cleared"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+    
+@app.route("/refresh", methods=["POST"])
+def refresh_conversation():
+    """Resets conversation history for a user session."""
+    session_id = request.json.get("session_id")
+    if session_id in conversation_history:
+        del conversation_history[session_id]
+    return {"message": "Conversation reset successfully."}, 200
 
 if __name__ == '__main__':
+    time.sleep(2)  # Optional: Wait for the server to be ready
     app.run(debug=True, port=5000)

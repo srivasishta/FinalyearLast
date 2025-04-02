@@ -1,47 +1,7 @@
-import React, { useContext, useEffect } from 'react';
+import React from "react";
 import { Card, Typography, Divider, Button, Box } from "@mui/material";
 
 const MentorCard = ({ mentor }) => {
-
-
-  async function onSelect(){
-    const studId = localStorage.getItem("id")
-    const currentMID = localStorage.getItem("mid")
-
-    let link = "http://localhost:5002/api/chat/request"
-    console.log(mentor.id)
-
-    let body = {
-      studentID: studId,
-      mentorID: mentor.id,
-      message : "Hey i want to connect"
-    }
-    console.log(currentMID)
-    if (currentMID){
-      link = "http://localhost:5002/api/chat/mentor/request"
-      body = {
-        senderID: currentMID,
-        receiverID: mentor.id,
-        message : "Hey i want to connect"
-      }
-    }
-
-    const response = await fetch(link, {
-      method: "POST",
-      headers: {
-          "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-  });
-    if (response.ok){
-      alert('Request Sent Successfully')
-    }else {
-      alert('error received')
-    }
-  }
-
-  const isMentor = localStorage.getItem('mid')
-
   return (
     <Card
       sx={{
@@ -93,7 +53,6 @@ const MentorCard = ({ mentor }) => {
         </Typography>
         <Button
           fullWidth
-          onClick={onSelect}
           sx={{
             backgroundColor: "#C4D9FF",
             color: "black",
@@ -103,7 +62,7 @@ const MentorCard = ({ mentor }) => {
             },
           }}
         >
-          {isMentor ? "Connect" : "Choose as Mentor"}
+          Choose as Mentor
         </Button>
       </Box>
     </Card>

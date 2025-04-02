@@ -1,84 +1,34 @@
-import React , {useState, useEffect} from "react";
+import React from "react";
 import { Box, Typography, Divider, Card, CardContent, Grid, IconButton } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // Tick icon
 import CancelIcon from "@mui/icons-material/Cancel"; // Cross icon
 
 export default function MentorTrainingPage() {
     // Array of student details
-    const [trainingModules, setTrainingModules] = useState([]); // ✅ Use state to store fetched data
+    const trainingModules = [
+        {
+            title: "Student 1",
+            description: "Student Details from Database.",
+        },
+        {
+            title: "Student 2",
+            description: "Student Details from Database.",
+        },
+        {
+            title: "Student 3",
+            description: "Student Details from Database.",
+        },
+    ];
 
-    const mentorID = localStorage.getItem("mid");
-
-    useEffect(() => {
-        const fetchRequests = async () => {
-            try {
-                const response = await fetch(`http://localhost:5002/api/chat/requests/${mentorID}`);
-                const data = await response.json();
-                if (data.success) {
-                    setTrainingModules(data.requests); // ✅ Update state instead of modifying a variable
-                }
-            } catch (error) {
-                console.error("Error fetching chat requests:", error);
-            }
-        };
-
-        fetchRequests(); // Fetch initially
-
-        // Set interval to fetch every 3 seconds
-        const interval = setInterval(fetchRequests, 3000);
-
-        return () => clearInterval(interval); // Cleanup on unmount
-    }, [mentorID]);
-
-    const handleAccept = async (id, type) => {
-        try {
-            const url = type === "mentor" 
-                ? "http://localhost:5002/api/chat/mentor/request/update" 
-                : "http://localhost:5002/api/chat/request/update";
-    
-            const response = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ requestId: id, action: "accepted" }),
-            });
-    
-            const data = await response.json();
-            if (data.success) {
-                setTrainingModules(prevModules => prevModules.filter(module => module.id !== id));
-                window.location.reload(); // Refresh the page after success for the new chatrooms to appear
-            }
-        } catch (error) {
-            console.error("Error accepting request:", error);
-        }
-    };;
-    
-    const handleReject = async (id, type) => {
-        try {
-            const url = type === "mentor" 
-                ? "http://localhost:5002/api/chat/mentor/request/update" 
-                : "http://localhost:5002/api/chat/request/update";
-    
-            const response = await fetch(url, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ requestId: id, action: "rejected" }),
-            });
-    
-            const data = await response.json();
-            if (data.success) {
-                setTrainingModules(prevModules => prevModules.filter(module => module.id !== id));
-            }
-        } catch (error) {
-            console.error("Error rejecting request:", error);
-        }
+    const handleAccept = (studentName) => {
+        console.log(`${studentName} accepted`);
+        // Add logic for accepting the student
     };
 
-
-
+    const handleReject = (studentName) => {
+        console.log(`${studentName} rejected`);
+        // Add logic for rejecting the student
+    };
 
     return (
         <Box
@@ -137,12 +87,7 @@ export default function MentorTrainingPage() {
                                         {module.title}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ textAlign: "justify", fontSize: 14, fontFamily: 'gilroy' }}>
-                                       {module.type === "mentor" ? "mentorID :" : "usn :"} {module.description}
-
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: "justify", fontSize: 14, fontFamily: 'gilroy' }}>
-                                       email : {module.mail}
-
+                                        {module.description}
                                     </Typography>
                                 </CardContent>
 
@@ -150,14 +95,14 @@ export default function MentorTrainingPage() {
                                 <Box sx={{ display: "flex", justifyContent: "space-around", p: 2 }}>
                                     <IconButton
                                         color="primary"
-                                        onClick={() => handleAccept(module.id, module.type)}
+                                        onClick={() => handleAccept(module.title)}
                                         sx={{ bgcolor: "lightblue", "&:hover": { bgcolor: "blue", color: "white" } }}
                                     >
                                         <CheckCircleIcon />
                                     </IconButton>
                                     <IconButton
                                         color="error"
-                                        onClick={() => handleReject(module.id, module.type)}
+                                        onClick={() => handleReject(module.title)}
                                         sx={{ bgcolor: "lightcoral", "&:hover": { bgcolor: "red", color: "white" } }}
                                     >
                                         <CancelIcon />

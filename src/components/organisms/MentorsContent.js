@@ -9,10 +9,8 @@ const MentorPage = () => {
   // Fetch mentor details from backend
   useEffect(() => {
     const fetchMentors = async () => {
-      const mid = localStorage.getItem("mid");
-      const userId = mid? mid : localStorage.getItem("id");
       try {
-        const response = await fetch(`http://localhost:5002/api/mentor/details?id=${mid}&currentUserID=${userId}`);
+        const response = await fetch("http://localhost:5002/api/mentor/details");
 
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
@@ -27,7 +25,6 @@ const MentorPage = () => {
           selectedMajors: mentor.selectedMajors,
           bio: mentor.bio,
           tech: mentor.tech,
-          id: mentor._id
         }));
 
         setMentors(formattedMentors);
@@ -42,19 +39,16 @@ const MentorPage = () => {
   const filteredMentors = mentors.filter((mentor) =>
     mentor.fullName.toLowerCase().includes(search.toLowerCase())
   );
-  const isMentor = localStorage.getItem('mid')
 
   return (
     <Box sx={{ width: "100%" }}>
       {/* Static Section */}
       <Box sx={{ position: "sticky", top: 0, backgroundColor: "white", zIndex: 1, padding: "20px 0" }}>
         <Typography variant="h4" component="h1" textAlign="center" fontFamily="Courier">
-          {
-          isMentor ? "Find Peers":
-          "Find Mentor"
-}        </Typography>
+          Find Mentor
+        </Typography>
         <Typography variant="body1" fontFamily="Bookman Old Style" textAlign="center" sx={{ marginBottom: "20px" }}>
-         { isMentor ? 'Build meaningful connections with other mentors. Exchange ideas, experiences, and support each other in your journey.' : "All of these mentors are ready to help! Select a mentor that you'd like to work with."}
+          All of these mentors are ready to help! Select a mentor that you'd like to work with.
         </Typography>
 
         {/* Search Box */}

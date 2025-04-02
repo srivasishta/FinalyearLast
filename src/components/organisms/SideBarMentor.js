@@ -14,7 +14,6 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import ContactMailIcon from "@mui/icons-material/DraftsOutlined";
 import AcUnitIcon from "@mui/icons-material/AcUnit";
 import AccountCircleIcon from "@mui/icons-material/AccountCircleOutlined";
-import PersonIcon from "@mui/icons-material/PersonOutlineOutlined";
 
 const SidebarMentor = () => {
     const navigate = useNavigate();  // ✅ React Router hook for navigation
@@ -23,7 +22,6 @@ const SidebarMentor = () => {
 
     const menuItems = [
         { text: "Dashboard", path: "/dashboard-mentor", icon: <DashboardIcon /> },
-        { text: "Other Mentors", path: "/mentors", icon: <PersonIcon />},
     ];
 
     const secondaryMenuItems = [
